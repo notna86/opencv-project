@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>OCR таблицы с локальным OpenCV.js</title>
+
+  <!-- Local OpenCV.js -->
+  <script src="opencv.js"></script>
+
+  <!-- Tesseract.js -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+  <!-- html2pdf.js -->
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.9.2/dist/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .btn {
+      margin: 5px 0;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    #preview {
+      max-width: 100%;
+      display: block;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    table, th, td {
+      border: 1px solid #444;
+      border-collapse: collapse;
+      padding: 6px;
+      vertical-align: top;
+    }
+    th {
+      background-color: #eee;
+    }
+    tfoot td {
+      font-weight: bold;
+      background: #f9f9f9;
+    }
+    #status {
+      margin: 10px 0;
+      color: #666;
+    }
+    #consoleContainer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 150px;
+      background-color: #000;
+      color: #fff;
+      overflow-y: scroll;
+      font-size: 12px;
+      padding: 5px;
+      box-sizing: border-box;
+      z-index: 10000;
+    }
+  </style>
+</head>
+<body>
+
+<h1>OCR таблицы с локальным OpenCV.js</h1>
+
+<input type="file" id="fileInput" accept="image/*" />
+<button class="btn" id="btnProcess">Обработать</button>
+<button class="btn" id="btnPdf">Сохранить в PDF</button>
+
+<p id="status"></p>
+<canvas id="canvas" style="display:none;"></canvas>
+<img id="preview" alt="Предпросмотр" style="display:none;">
+<div id="tableContainer"></div>
+
+<div id="consoleContainer"></div>
+
+<script>
+
+// Adding on-page console output
+const consoleContainer = document.createElement('div');
+consoleContainer.id = 'consoleContainer';
+consoleContainer.style.position = 'fixed';
+consoleContainer.style.bottom = '0';
+consoleContainer.style.left = '0';
+consoleContainer.style.width = '100%';
+consoleContainer.style.height = '150px';
+consoleContainer.style.backgroundColor = '#000';
+consoleContainer.style.color = '#fff';
+consoleContainer.style.overflowY = 'scroll';
+consoleContainer.style.fontSize = '12px';
+consoleContainer.style.padding = '5px';
+consoleContainer.style.boxSizing = 'border-box';
+consoleContainer.style.zIndex = '10000';
+document.body.appendChild(consoleContainer);
+
+function logToConsole(message) {
+  const logEntry = document.createElement('div');
+  logEntry.textContent = message;
+  consoleContainer.appendChild(logEntry);
+  consoleContainer.scrollTop = consoleContainer.scrollHeight; // Auto-scroll to the bottom
+}
+
+// Override console.log to show output on the page
+console.log = (message) => {
+  logToConsole(message);
+};
+
+// Enhanced OpenCV loading with error handling
+console.log('Initializing OpenCV.js...');
+
+// Check if OpenCV is loaded properly
+function waitForOpenCV() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max (assuming check every 100ms)
+    const check = () => {
+      if (typeof cv !== 'undefined' && cv.Mat) {
+        console.log('OpenCV.js loaded successfully.');
+        resolve();
+      } else if (attempts >= maxAttempts) {
+        console.error('Failed to load OpenCV.js. Please check your connection or CDN availability.');
+        reject(new Error('OpenCV.js failed to load.'));
+      } else {
+        attempts++;
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+}
+
+// Show error message on the page if OpenCV fails
+function showError(message) {
+  const errorContainer = document.createElement('div');
+  errorContainer.textContent = message;
+  errorContainer.style.position = 'fixed';
+  errorContainer.style.top = '0';
+  errorContainer.style.left = '0';
+  errorContainer.style.width = '100%';
+  errorContainer.style.backgroundColor = '#ff4d4d';
+  errorContainer.style.color = '#fff';
+  errorContainer.style.textAlign = 'center';
+  errorContainer.style.padding = '10px';
+  errorContainer.style.zIndex = '10000';
+  document.body.appendChild(errorContainer);
+}
+
+// Handling OpenCV loading and errors
+btnProcess.addEventListener('click', async () => {
+  try {
+    console.log('Loading OpenCV...');
+    updateProgress(10, 'Загрузка OpenCV...');
+    await waitForOpenCV();
+    console.log('OpenCV loaded successfully.');
+    // Proceed with processing
+  } catch (error) {
+    console.error('Error loading OpenCV:', error);
+    showError('Ошибка загрузки OpenCV.js. Проверьте соединение с интернетом или попробуйте позже.');
+  }
+});
+
+</script>
+
+</body>
+</html>
